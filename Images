@@ -1,1 +1,158 @@
+[ApiController]
+[Route("api/[controller]")]
+public class ImageController : ControllerBase
+{
+    [HttpGet("{fileName}")]
+    public IActionResult GetImage(string fileName)
+    {
+        var folderPath = "C:\\Images"; // or use IConfiguration for dynamic path
+        var filePath = Path.Combine(folderPath, fileName);
 
+        if (!System.IO.File.Exists(filePath))
+            return NotFound("Image not found");
+
+        var imageBytes = System.IO.File.ReadAllBytes(filePath);
+        var base64 = Convert.ToBase64String(imageBytes);
+        var mimeType = GetMimeType(fileName);
+
+        return Ok(new
+        {
+            FileName = fileName,
+            Base64 = $"data:{mimeType};base64,{base64}"
+        });
+    }
+
+    private string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+    }
+}
+
+
+
+
+
+[ApiController]
+[Route("api/[controller]")]
+public class ImageController : ControllerBase
+{
+    [HttpGet("{fileName}")]
+    public IActionResult GetImage(string fileName)
+    {
+        var folderPath = "C:\\Images"; // or use IConfiguration for dynamic path
+        var filePath = Path.Combine(folderPath, fileName);
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound("Image not found");
+
+        var imageBytes = System.IO.File.ReadAllBytes(filePath);
+        var base64 = Convert.ToBase64String(imageBytes);
+        var mimeType = GetMimeType(fileName);
+
+        return Ok(new
+        {
+            FileName = fileName,
+            Base64 = $"data:{mimeType};base64,{base64}"
+        });
+    }
+
+    private string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+    }
+}
+
+
+
+// image.service.ts
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+
+@Injectable({ providedIn: 'root' })
+export class ImageService {
+  constructor(private http: HttpClient) {}
+
+  getImage(fileName: string) {
+    return this.http.get<{ FileName: string; Base64: string }>(`/api/image/${fileName}`);
+  }
+}
+
+
+
+// image.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ImageService } from './image.service';
+
+@Component({
+  selector: 'app-image',
+  templateUrl: './image.component.html',
+})
+export class ImageComponent implements OnInit {
+  imageSrc: string | null = null;
+
+  constructor(private imageService: ImageService) {}
+
+  ngOnInit(): void {
+    const cachedImage = localStorage.getItem('myImage');
+    if (cachedImage) {
+      this.imageSrc = cachedImage;
+    } else {
+      this.imageService.getImage('example.jpg').subscribe((data) => {
+        this.imageSrc = data.Base64;
+        localStorage.setItem('myImage', data.Base64);
+      });
+    }
+  }
+}
+
+<!-- image.component.html -->
+<div *ngIf="imageSrc">
+  <img [src]="imageSrc" alt="Loaded image" style="max-width: 100%;" />
+</div>
+
+
+
+<!-- image-slider.component.html -->
+<div *ngIf="images.length">
+  <div *ngFor="let img of images; let i = index">
+    <img [src]="img" [alt]="'Image ' + i" style="max-width: 100%;" />
+  </div>
+</div>
+
+
+
+// image-slider.component.ts
+export class ImageSliderComponent implements OnInit {
+  images: string[] = [];
+
+  constructor(private imageService: ImageService) {}
+
+  ngOnInit(): void {
+    const fileNames = ['example1.jpg', 'example2.jpg'];
+    fileNames.forEach((name) => {
+      const cached = localStorage.getItem(name);
+      if (cached) {
+        this.images.push(cached);
+      } else {
+        this.imageService.getImage(name).subscribe((data) => {
+          localStorage.setItem(name, data.Base64);
+          this.images.push(data.Base64);
+        });
+      }
+    });
+  }
+}
